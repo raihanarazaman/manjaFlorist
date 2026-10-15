@@ -37,6 +37,8 @@ input,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-rad
 <label>Alamat</label><textarea id="ad" rows="3" autocomplete="street-address"></textarea>
 <label>No. telefon</label><input id="ph" type="tel" autocomplete="tel"></div>
 <div class="card"><h2>Pilih produk</h2><div id="plist" class="mu">Memuatkan…</div></div>
+<div class="card"><h2>Permintaan khas <span class="mu">(tidak wajib)</span></h2>
+<textarea id="nt" rows="3" maxlength="500" placeholder="cth: tulis ucapan di kad, warna ribbon, tarikh nak terima…"></textarea></div>
 <div class="card"><h2>Jumlah bayaran</h2><div id="sum"></div><div id="pay"></div>
 <label>Upload resit deposit (50%)</label><input id="rc" type="file" accept="image/*,application/pdf">
 <p><button class="btn" id="go">Hantar tempahan</button></p><div id="res"></div></div>
@@ -103,8 +105,9 @@ $('go').onclick=async()=>{
  if(!c.items.length)return m('Sila pilih sekurang-kurangnya satu produk.');
  if(!f)return m('Sila upload resit deposit.');
  $('go').disabled=true;m('Menghantar…');
- try{const d=await api({a:'order',name:nm,address:ad,phone:ph,ids:[...sel],receipt:await pack(f)});
-  const txt=`Hai, saya dah buat tempahan.\nKod order: ${d.code}\nNama: ${nm}\nProduk: ${c.items.map(p=>p.name).join(', ')}\nTotal: ${RM(d.total)}\nDeposit: ${RM(d.deposit)}\nBaki: ${RM(d.balance)}\n\nSaya lampirkan screenshot order & resit deposit.`;
+ try{const d=await api({a:'order',name:nm,address:ad,phone:ph,ids:[...sel],note:$('nt').value.trim(),receipt:await pack(f)});
+  const nt=$('nt').value.trim();
+  const txt=`Hai, saya dah buat tempahan.\nKod order: ${d.code}\nNama: ${nm}\nProduk: ${c.items.map(p=>p.name).join(', ')}\nTotal: ${RM(d.total)}\nDeposit: ${RM(d.deposit)}\nBaki: ${RM(d.balance)}${nt?`\nPermintaan khas: ${nt}`:''}\n\nSaya lampirkan screenshot order & resit deposit.`;
   m(`<b>Tempahan diterima ✅</b><br>Kod order anda: <b style="font-size:20px">${d.code}</b><br>Produk: ${c.items.map(p=>esc(p.name)).join(', ')}
   <div style="font-size:20px;font-weight:800;margin:12px 0 6px;color:var(--ac)">BAKI PERLU DIBAYAR : ${RM(d.balance)}</div>
   <div>Seller akan update 2-3 hari bekerja.</div>
@@ -112,7 +115,7 @@ $('go').onclick=async()=>{
   <button class="btn ghost" type="button" id="goTrack" data-code="${d.code}">🔍 Semak Order</button>
   <p><b>Langkah terakhir:</b> 1) Screenshot skrin ini. 2) Tekan butang di bawah, kemudian lampirkan screenshot tu dalam chat WhatsApp.</p>
   <a class="btn" style="display:inline-block;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${PAY.wa}?text=${encodeURIComponent(txt)}">💬 Hantar screenshot di WhatsApp</a>`);
-  sel.clear();$('rc').value='';load()}catch(e){m('Gagal hantar: '+esc(e.message))}
+  sel.clear();$('rc').value='';$('nt').value='';load()}catch(e){m('Gagal hantar: '+esc(e.message))}
  $('go').disabled=false};
 
 $('res').addEventListener('click',e=>{const b=e.target.closest('#goTrack');if(b){$('tc').value=b.dataset.code;show('track');window.scrollTo(0,0)}});
@@ -135,7 +138,7 @@ ${products.map(p=>{const n=need[p.id]||0,b=p.stock-n;return `<tr><td>${esc(p.nam
 <div class="two" style="margin-top:8px"><input id="ps" type="number" placeholder="Stok"><input id="pi" type="file" accept="image/*"></div><p><button class="btn sm" id="padd">Tambah</button></p></div>
 <div class="card"><h2>Semua order</h2>${[...orders].reverse().map(o=>`<div class="card" style="margin:0 0 10px">
 <div class="row"><b>${esc(o.code)} · ${esc(o.name)}</b><span class="tag ${o.status==='baru'?'':'ok'}">${esc(o.status)}</span></div>
-<div class="mu">${esc(o.phone)} · ${esc(o.address)}</div><div>${o.items.map(i=>esc(i.name)).join(', ')}</div>
+<div class="mu">${esc(o.phone)} · ${esc(o.address)}</div><div>${o.items.map(i=>esc(i.name)).join(', ')}</div>${o.note?`<div>📝 <b>Permintaan khas:</b> ${esc(o.note)}</div>`:''}
 <div class="mu">Total ${RM(o.total)} · Deposit ${RM(o.deposit)} · Baki ${RM(o.balance)} · <a href="${esc(o.receipt)}" target="_blank" rel="noopener">Lihat resit</a></div>
 <div class="two" style="margin-top:8px"><input type="date" value="${esc(o.posDate)}" data-pos="${o.code}"><input placeholder="No. tracking" value="${esc(o.trackingNo)}" data-trk="${o.code}"></div>
 <label>Baki perlu dibayar (RM) — ini yang customer nampak</label><input type="number" step="0.01" min="0" value="${o.balance}" data-bal="${o.code}">
