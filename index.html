@@ -52,7 +52,7 @@ input,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-rad
 <script>
 const API='https://script.google.com/macros/s/AKfycbxF9ronFQpwdoqzVWu05UWEsbichO3TDHn_me-Aky7nBw7SEpvQcQy3O9ik8OhfV98R/exec';   // <-- tampal URL Web App di sini
 // ====== TUKAR MAKLUMAT BAYARAN DI SINI ======
-const PAY={bank:'SEMUA BANK BOLEH',acc:'https://payment.tngdigital.com.my/sc/bDLnzmnsN4',name:'RAIHANA AUNI',qr:'qr.png'}; // qr.png = gambar QR, letak sebelah index.html
+const PAY={bank:'SEMUA BANK BOLEH',acc:'https://payment.tngdigital.com.my/sc/bDLnzmnsN4',name:'RAIHANA AUNI',qr:'qr.png',wa:'601123714058'}; // wa = no. WhatsApp awak, format 60xxxxxxxxx (tanpa + dan tanpa 0 depan) // qr.png = gambar QR, letak sebelah index.html
 const RM=n=>'RM'+Number(n||0).toFixed(2),POS=10;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const $=id=>document.getElementById(id);
@@ -105,7 +105,11 @@ $('go').onclick=async()=>{
  if(!f)return m('Sila upload resit deposit.');
  $('go').disabled=true;m('Menghantar…');
  try{const d=await api({a:'order',name:nm,address:ad,phone:ph,ids:[...sel],receipt:await pack(f)});
-  m(`<b>Tempahan diterima ✅</b><br>Kod order anda: <b style="font-size:20px">${d.code}</b><br>Simpan kod ini untuk semak status &amp; tracking. Baki ${RM(d.balance)} dibayar kemudian.`);
+  const txt=`Hai, saya dah buat tempahan.\nKod order: ${d.code}\nNama: ${nm}\nProduk: ${c.items.map(p=>p.name).join(', ')}\nTotal: ${RM(d.total)}\nDeposit: ${RM(d.deposit)}\nBaki: ${RM(d.balance)}\n\nSaya lampirkan screenshot order & resit deposit.`;
+  m(`<b>Tempahan diterima ✅</b><br>Kod order anda: <b style="font-size:20px">${d.code}</b><br>Produk: ${c.items.map(p=>esc(p.name)).join(', ')}<br>Total ${RM(d.total)} · Deposit ${RM(d.deposit)} · Baki ${RM(d.balance)}
+  <p><b>Langkah terakhir:</b> 1) Screenshot skrin ini. 2) Tekan butang di bawah, kemudian lampirkan screenshot tu dalam chat WhatsApp.</p>
+  <a class="btn" style="display:inline-block;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${PAY.wa}?text=${encodeURIComponent(txt)}">💬 Hantar screenshot di WhatsApp</a>
+  <p class="mu">Simpan kod order untuk semak status &amp; tracking.</p>`);
   sel.clear();$('rc').value='';load()}catch(e){m('Gagal hantar: '+esc(e.message))}
  $('go').disabled=false};
 
