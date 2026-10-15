@@ -25,6 +25,8 @@ input,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-rad
 .tag{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--wn);color:var(--wn)}.tag.ok{border-color:var(--ok);color:var(--ok)}
 .msg{padding:10px;border-radius:10px;background:var(--bg);border:1px dashed var(--ac);margin-top:10px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hide{display:none}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:9;padding:16px;cursor:zoom-out}
+#lb.hide{display:none}#lb img{max-width:100%;max-height:100%;border-radius:12px;object-fit:contain}.prod img{cursor:zoom-in}
 </style></head><body><main>
 <h1>📦 Borang Tempahan</h1>
 <nav id="nav"><button data-v="form" class="on">Tempah</button><button data-v="track">Semak Order</button><button data-v="seller">Penjual</button></nav>
@@ -46,6 +48,7 @@ input,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-rad
 
 <section id="v-seller" class="hide"><div id="sl"></div></section>
 </main>
+<div id="lb" class="hide"><img id="lbi" alt=""></div>
 <script>
 const API='https://script.google.com/macros/s/AKfycbxF9ronFQpwdoqzVWu05UWEsbichO3TDHn_me-Aky7nBw7SEpvQcQy3O9ik8OhfV98R/exec';   // <-- tampal URL Web App di sini
 const RM=n=>'RM'+Number(n||0).toFixed(2),POS=10;
@@ -80,7 +83,10 @@ function renderProducts(){
 function renderSum(){const c=calc();$('sum').innerHTML=`<div class="row"><span>Jumlah produk</span><b>${RM(c.total)}</b></div>
 <div class="row"><span>Deposit 50% (bayar sekarang)</span><b>${RM(c.dep)}</b></div><div class="row"><span>Pos</span><b>${RM(c.items.length?POS:0)}</b></div>
 <div class="row tot"><span>Baki perlu dibayar</span><span>${RM(c.bal)}</span></div><div class="mu">Baki = jumlah − deposit + RM${POS} pos</div>`}
-$('plist').onclick=e=>{const el=e.target.closest('.prod');if(!el||el.classList.contains('out'))return;
+$('lb').onclick=()=>$('lb').classList.add('hide');
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('lb').classList.add('hide')});
+$('plist').onclick=e=>{if(e.target.tagName==='IMG'){$('lbi').src=e.target.src;$('lb').classList.remove('hide');return}
+ const el=e.target.closest('.prod');if(!el||el.classList.contains('out'))return;
  const id=el.dataset.id;sel.has(id)?sel.delete(id):sel.add(id);renderProducts()};
 
 $('go').onclick=async()=>{
@@ -127,7 +133,7 @@ $('sl').addEventListener('click',async e=>{const t=e.target.dataset,q=s=>documen
  else if(t.conf)await sapi({a:'confirm',code:t.conf});
  else if(t.cancel&&confirm('Batalkan order?'))await sapi({a:'cancel',code:t.cancel});
  else if(e.target.id==='padd'){const n=$('pn').value.trim(),pr=$('pp').value,f=$('pi').files[0];if(!n||!pr)return alert('Isi nama & harga');
-  e.target.disabled=true;await sapi({a:'saveProduct',name:n,price:pr,stock:$('ps').value||0,image:f?await pack(f,800):null})}
+  e.target.disabled=true;await sapi({a:'saveProduct',name:n,price:pr,stock:$('ps').value||0,image:f?await pack(f,1200):null})}
  else return;
  await sload()}catch(x){alert('Ralat: '+x.message);renderSeller()}});
 
