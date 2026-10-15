@@ -37,7 +37,7 @@ input,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-rad
 <label>Alamat</label><textarea id="ad" rows="3" autocomplete="street-address"></textarea>
 <label>No. telefon</label><input id="ph" type="tel" autocomplete="tel"></div>
 <div class="card"><h2>Pilih produk</h2><div id="plist" class="mu">Memuatkan…</div></div>
-<div class="card"><h2>Jumlah bayaran</h2><div id="sum"></div>
+<div class="card"><h2>Jumlah bayaran</h2><div id="sum"></div><div id="pay"></div>
 <label>Upload resit deposit (50%)</label><input id="rc" type="file" accept="image/*,application/pdf">
 <p><button class="btn" id="go">Hantar tempahan</button></p><div id="res"></div></div>
 </section>
@@ -50,7 +50,9 @@ input,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-rad
 </main>
 <div id="lb" class="hide"><img id="lbi" alt=""></div>
 <script>
-const API='https://script.google.com/macros/s/AKfycbxF9ronFQpwdoqzVWu05UWEsbichO3TDHn_me-Aky7nBw7SEpvQcQy3O9ik8OhfV98R/exec';   // <-- tampal URL Web App di sini
+const API='PASTE_URL_APPS_SCRIPT_DI_SINI';   // <-- tampal URL Web App di sini
+// ====== TUKAR MAKLUMAT BAYARAN DI SINI ======
+const PAY={bank:'SEMUA BANK BOLEH',acc:'https://payment.tngdigital.com.my/sc/bDLnzmnsN4',name:'RAIHANA AUNI',qr:'qr.png'}; // qr.png = gambar QR, letak sebelah index.html
 const RM=n=>'RM'+Number(n||0).toFixed(2),POS=10;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const $=id=>document.getElementById(id);
@@ -80,9 +82,15 @@ function renderProducts(){
  $('plist').innerHTML=products.map(p=>{const o=p.stock<=0;return `<div class="prod ${sel.has(p.id)?'sel':''} ${o?'out':''}" data-id="${esc(p.id)}">
  <input type="checkbox" ${sel.has(p.id)?'checked':''} ${o?'disabled':''}>${p.img?`<img src="${esc(p.img)}" alt="">`:'<div class="ph"></div>'}
  <div><div class="n">${esc(p.name)}</div><div>${RM(p.price)}</div>${o?'<div class="mu">Habis stok</div>':''}</div></div>`}).join('');renderSum()}
+function renderPay(c){$('pay').innerHTML=`<div class="msg"><b>Cara bayar deposit</b><br>${c.items.length?`Transfer <b>${RM(c.dep)}</b> ke:`:'Akaun untuk bayar deposit:'}<br>${esc(PAY.bank)}<br>
+<b style="font-size:17px">${esc(PAY.acc)}</b> <button class="btn sm ghost" id="cp" type="button">Salin</button><br>${esc(PAY.name)}
+<div><img id="qr" src="${esc(PAY.qr)}" alt="QR bayaran" style="max-width:220px;width:100%;margin-top:8px;border-radius:10px;cursor:zoom-in" onerror="this.remove()"></div>
+<div class="mu">Lepas bayar, upload resit di bawah.</div></div>`}
+$('pay').addEventListener('click',e=>{if(e.target.id==='cp'){navigator.clipboard?.writeText(PAY.acc);e.target.textContent='Disalin ✓'}
+ if(e.target.id==='qr'){$('lbi').src=e.target.src;$('lb').classList.remove('hide')}});
 function renderSum(){const c=calc();$('sum').innerHTML=`<div class="row"><span>Jumlah produk</span><b>${RM(c.total)}</b></div>
 <div class="row"><span>Deposit 50% (bayar sekarang)</span><b>${RM(c.dep)}</b></div><div class="row"><span>Pos</span><b>${RM(c.items.length?POS:0)}</b></div>
-<div class="row tot"><span>Baki perlu dibayar</span><span>${RM(c.bal)}</span></div><div class="mu">Baki = jumlah − deposit + RM${POS} pos</div>`}
+<div class="row tot"><span>Baki perlu dibayar</span><span>${RM(c.bal)}</span></div><div class="mu">Baki = jumlah − deposit + RM${POS} pos</div>`;renderPay(c)}
 $('lb').onclick=()=>$('lb').classList.add('hide');
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('lb').classList.add('hide')});
 $('plist').onclick=e=>{if(e.target.tagName==='IMG'){$('lbi').src=e.target.src;$('lb').classList.remove('hide');return}
