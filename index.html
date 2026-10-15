@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ms"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Borang Tempahan</title>
+<style>
+:root{--bg:#fbf8f5;--card:#fff;--tx:#2a2328;--mu:#7a6f76;--ac:#b4456b;--acx:#fff;--bd:#e8dfe3;--ok:#2f7d4f;--wn:#b26a00}
+@media(prefers-color-scheme:dark){:root{--bg:#1b171a;--card:#262124;--tx:#f1eaee;--mu:#a89da4;--ac:#e07a9c;--acx:#1b171a;--bd:#3a3338;--ok:#6fcf97;--wn:#f2b45a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px}h1{font-size:22px;margin:4px 0 12px}h2{font-size:16px;margin:0 0 10px}
+nav{display:flex;gap:6px;margin-bottom:14px}nav button{flex:1;padding:9px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font:inherit;cursor:pointer}
+nav button.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:14px}
+label{display:block;font-size:13px;color:var(--mu);margin:10px 0 4px}
+input,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:9px;background:var(--bg);color:var(--tx);font:inherit}
+.btn{padding:10px 16px;border:0;border-radius:10px;background:var(--ac);color:var(--acx);font:inherit;font-weight:600;cursor:pointer}
+.btn.sm{padding:6px 10px;font-size:13px}.btn.ghost{background:transparent;color:var(--ac);border:1px solid var(--ac)}.btn:disabled{opacity:.5}
+.prod{display:flex;gap:12px;align-items:center;padding:10px;border:1px solid var(--bd);border-radius:12px;margin-bottom:8px;cursor:pointer}
+.prod.sel{border-color:var(--ac);box-shadow:0 0 0 1px var(--ac)}.prod input{width:auto}
+.prod img,.ph{width:64px;height:64px;border-radius:10px;object-fit:cover;background:var(--bd);flex:none}
+.n{font-weight:600}.mu{color:var(--mu);font-size:13px}.out{opacity:.5;cursor:not-allowed}
+.row{display:flex;justify-content:space-between;gap:10px;padding:3px 0}.tot{font-weight:700;border-top:1px solid var(--bd);margin-top:6px;padding-top:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px}.stat b{display:block;font-size:18px}
+.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}td,th{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--wn);color:var(--wn)}.tag.ok{border-color:var(--ok);color:var(--ok)}
+.msg{padding:10px;border-radius:10px;background:var(--bg);border:1px dashed var(--ac);margin-top:10px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hide{display:none}
+</style></head><body><main>
+<h1>📦 Borang Tempahan</h1>
+<nav id="nav"><button data-v="form" class="on">Tempah</button><button data-v="track">Semak Order</button><button data-v="seller">Penjual</button></nav>
+
+<section id="v-form">
+<div class="card"><h2>Maklumat anda</h2>
+<label>Nama</label><input id="nm" autocomplete="name">
+<label>Alamat</label><textarea id="ad" rows="3" autocomplete="street-address"></textarea>
+<label>No. telefon</label><input id="ph" type="tel" autocomplete="tel"></div>
+<div class="card"><h2>Pilih produk</h2><div id="plist" class="mu">Memuatkan…</div></div>
+<div class="card"><h2>Jumlah bayaran</h2><div id="sum"></div>
+<label>Upload resit deposit (50%)</label><input id="rc" type="file" accept="image/*,application/pdf">
+<p><button class="btn" id="go">Hantar tempahan</button></p><div id="res"></div></div>
+</section>
+
+<section id="v-track" class="hide"><div class="card"><h2>Semak status &amp; tracking</h2>
+<label>Kod order anda</label><input id="tc" placeholder="cth: AB12CD" style="text-transform:uppercase">
+<p><button class="btn" id="tg">Semak</button></p><div id="tr"></div></div></section>
+
+<section id="v-seller" class="hide"><div id="sl"></div></section>
+</main>
+<script>
+const API='https://script.google.com/macros/s/AKfycbxF9ronFQpwdoqzVWu05UWEsbichO3TDHn_me-Aky7nBw7SEpvQcQy3O9ik8OhfV98R/exec';   // <-- tampal URL Web App di sini
+const RM=n=>'RM'+Number(n||0).toFixed(2),POS=10;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=id=>document.getElementById(id);
+let products=[],orders=[],sel=new Set(),pw='';
+
+async function api(b){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(b)});
+ const d=await r.json();if(d.error)throw new Error(d.error);return d}
+const sapi=b=>api({...b,pw});
+
+// kecilkan gambar sebelum upload (PDF dihantar terus, max ~3MB)
+function pack(f,max=1280){return new Promise((ok,no)=>{
+ if(f.type==='application/pdf'){if(f.size>3e6)return no(new Error('PDF terlalu besar (max 3MB)'));
+  const r=new FileReader();r.onload=()=>ok({b64:r.result.split(',')[1],mime:f.type,name:f.name});return r.readAsDataURL(f)}
+ const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');
+  c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+  ok({b64:c.toDataURL('image/jpeg',.8).split(',')[1],mime:'image/jpeg',name:f.name.replace(/\.\w+$/,'')+'.jpg'})};
+ im.onerror=()=>no(new Error('Gambar tidak sah'));im.src=URL.createObjectURL(f)})}
+
+function show(v){document.querySelectorAll('section').forEach(s=>s.classList.add('hide'));$('v-'+v).classList.remove('hide');
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));if(v==='seller')renderSeller()}
+$('nav').onclick=e=>{if(e.target.dataset.v)show(e.target.dataset.v)};
+
+function calc(){const items=products.filter(p=>sel.has(p.id)),total=items.reduce((a,p)=>a+p.price,0),dep=total/2;
+ return{items,total,dep,bal:total-dep+(items.length?POS:0)}}
+function renderProducts(){
+ if(!products.length){$('plist').textContent='Belum ada produk.';return renderSum()}
+ $('plist').innerHTML=products.map(p=>{const o=p.stock<=0;return `<div class="prod ${sel.has(p.id)?'sel':''} ${o?'out':''}" data-id="${esc(p.id)}">
+ <input type="checkbox" ${sel.has(p.id)?'checked':''} ${o?'disabled':''}>${p.img?`<img src="${esc(p.img)}" alt="">`:'<div class="ph"></div>'}
+ <div><div class="n">${esc(p.name)}</div><div>${RM(p.price)}</div>${o?'<div class="mu">Habis stok</div>':''}</div></div>`}).join('');renderSum()}
+function renderSum(){const c=calc();$('sum').innerHTML=`<div class="row"><span>Jumlah produk</span><b>${RM(c.total)}</b></div>
+<div class="row"><span>Deposit 50% (bayar sekarang)</span><b>${RM(c.dep)}</b></div><div class="row"><span>Pos</span><b>${RM(c.items.length?POS:0)}</b></div>
+<div class="row tot"><span>Baki perlu dibayar</span><span>${RM(c.bal)}</span></div><div class="mu">Baki = jumlah − deposit + RM${POS} pos</div>`}
+$('plist').onclick=e=>{const el=e.target.closest('.prod');if(!el||el.classList.contains('out'))return;
+ const id=el.dataset.id;sel.has(id)?sel.delete(id):sel.add(id);renderProducts()};
+
+$('go').onclick=async()=>{
+ const nm=$('nm').value.trim(),ad=$('ad').value.trim(),ph=$('ph').value.trim(),f=$('rc').files[0],c=calc();
+ const m=t=>$('res').innerHTML=`<div class="msg">${t}</div>`;
+ if(!nm||!ad||!ph)return m('Sila isi nama, alamat & no. telefon.');
+ if(!c.items.length)return m('Sila pilih sekurang-kurangnya satu produk.');
+ if(!f)return m('Sila upload resit deposit.');
+ $('go').disabled=true;m('Menghantar…');
+ try{const d=await api({a:'order',name:nm,address:ad,phone:ph,ids:[...sel],receipt:await pack(f)});
+  m(`<b>Tempahan diterima ✅</b><br>Kod order anda: <b style="font-size:20px">${d.code}</b><br>Simpan kod ini untuk semak status &amp; tracking. Baki ${RM(d.balance)} dibayar kemudian.`);
+  sel.clear();$('rc').value='';load()}catch(e){m('Gagal hantar: '+esc(e.message))}
+ $('go').disabled=false};
+
+$('tg').onclick=async()=>{const c=$('tc').value.trim().toUpperCase();if(!c)return;$('tr').textContent='Menyemak…';
+ try{const d=await api({a:'track',code:c});$('tr').innerHTML=`<div class="msg">Status: <b>${esc(d.status)}</b><br>Tarikh pos: ${esc(d.posDate||'—')}<br>No. tracking: <b>${esc(d.trackingNo||'Belum ada')}</b></div>`}
+ catch(e){$('tr').innerHTML=`<div class="msg">${esc(e.message)}</div>`}};
+
+/* ---------- Penjual ---------- */
+async function sload(){const d=await sapi({a:'sdata'});products=d.products;orders=d.orders;renderProducts();renderSeller()}
+function renderSeller(){const el=$('sl');
+ if(!pw){el.innerHTML=`<div class="card"><h2>🔒 Penjual</h2><label>Kata laluan</label><input id="pw" type="password"><p><button class="btn" id="pwgo">Masuk</button></p><div id="pwm" class="mu"></div></div>`;return}
+ const act=orders.filter(o=>o.status!=='batal'),pend=act.filter(o=>o.status==='baru'),need={};
+ pend.forEach(o=>o.items.forEach(i=>need[i.id]=(need[i.id]||0)+1));const sum=k=>act.reduce((a,o)=>a+o[k],0);
+ el.innerHTML=`<div class="grid"><div class="stat">Order akan datang<b>${pend.length}</b></div><div class="stat">Deposit diterima<b>${RM(sum('deposit'))}</b></div><div class="stat">Jumlah jualan<b>${RM(sum('total'))}</b></div></div>
+<div class="card"><h2>Semak stok</h2><div class="scroll"><table><tr><th>Produk</th><th>Harga</th><th>Stok</th><th>Order baru</th><th>Baki</th><th></th></tr>
+${products.map(p=>{const n=need[p.id]||0,b=p.stock-n;return `<tr><td>${esc(p.name)}</td><td>${RM(p.price)}</td><td><input type="number" min="0" value="${p.stock}" style="width:70px" data-stock="${esc(p.id)}"></td>
+<td>${n}</td><td style="color:${b<0?'var(--wn)':'inherit'}"><b>${b}</b>${b<0?' ⚠ kurang':''}</td><td><button class="btn sm ghost" data-delp="${esc(p.id)}">Padam</button></td></tr>`}).join('')||'<tr><td colspan=6>Tiada produk</td></tr>'}</table></div>
+<h2 style="margin-top:14px">Tambah produk</h2><div class="two"><input id="pn" placeholder="Nama produk"><input id="pp" type="number" step="0.01" placeholder="Harga (RM)"></div>
+<div class="two" style="margin-top:8px"><input id="ps" type="number" placeholder="Stok"><input id="pi" type="file" accept="image/*"></div><p><button class="btn sm" id="padd">Tambah</button></p></div>
+<div class="card"><h2>Semua order</h2>${[...orders].reverse().map(o=>`<div class="card" style="margin:0 0 10px">
+<div class="row"><b>${esc(o.code)} · ${esc(o.name)}</b><span class="tag ${o.status==='baru'?'':'ok'}">${esc(o.status)}</span></div>
+<div class="mu">${esc(o.phone)} · ${esc(o.address)}</div><div>${o.items.map(i=>esc(i.name)).join(', ')}</div>
+<div class="mu">Total ${RM(o.total)} · Deposit ${RM(o.deposit)} · Baki ${RM(o.balance)} · <a href="${esc(o.receipt)}" target="_blank" rel="noopener">Lihat resit</a></div>
+<div class="two" style="margin-top:8px"><input type="date" value="${esc(o.posDate)}" data-pos="${o.code}"><input placeholder="No. tracking" value="${esc(o.trackingNo)}" data-trk="${o.code}"></div>
+<p style="margin:8px 0 0"><button class="btn sm" data-save="${o.code}">Simpan</button> ${o.status==='baru'?`<button class="btn sm ghost" data-conf="${o.code}">Sahkan (tolak stok)</button> `:''}${o.status!=='batal'?`<button class="btn sm ghost" data-cancel="${o.code}">Batal</button>`:''}</p></div>`).join('')||'<div class="mu">Belum ada order.</div>'}</div>`}
+
+$('sl').addEventListener('change',async e=>{const id=e.target.dataset.stock;if(id){try{await sapi({a:'stock',id,stock:e.target.value});await sload()}catch(x){alert(x.message)}}});
+$('sl').addEventListener('click',async e=>{const t=e.target.dataset,q=s=>document.querySelector(s).value;
+ try{
+ if(e.target.id==='pwgo'){pw=$('pw').value;try{await sload()}catch(x){pw='';renderSeller();$('pwm').textContent=x.message}return}
+ if(t.delp&&confirm('Padam produk?'))await sapi({a:'delProduct',id:t.delp});
+ else if(t.save){await sapi({a:'saveOrder',code:t.save,posDate:q(`[data-pos="${t.save}"]`),trackingNo:q(`[data-trk="${t.save}"]`).trim()})}
+ else if(t.conf)await sapi({a:'confirm',code:t.conf});
+ else if(t.cancel&&confirm('Batalkan order?'))await sapi({a:'cancel',code:t.cancel});
+ else if(e.target.id==='padd'){const n=$('pn').value.trim(),pr=$('pp').value,f=$('pi').files[0];if(!n||!pr)return alert('Isi nama & harga');
+  e.target.disabled=true;await sapi({a:'saveProduct',name:n,price:pr,stock:$('ps').value||0,image:f?await pack(f,800):null})}
+ else return;
+ await sload()}catch(x){alert('Ralat: '+x.message);renderSeller()}});
+
+async function load(){try{products=(await api({a:'products'})).products;renderProducts()}
+ catch(e){$('plist').textContent='Gagal memuatkan produk. Semak URL API.'}}
+renderProducts();load();
+</script></body></html>
