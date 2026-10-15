@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ms"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Borang Tempahan</title>
+<title>Manja Florist</title>
 <style>
 :root{--bg:#fbf8f5;--card:#fff;--tx:#2a2328;--mu:#7a6f76;--ac:#b4456b;--acx:#fff;--bd:#e8dfe3;--ok:#2f7d4f;--wn:#b26a00}
 @media(prefers-color-scheme:dark){:root{--bg:#1b171a;--card:#262124;--tx:#f1eaee;--mu:#a89da4;--ac:#e07a9c;--acx:#1b171a;--bd:#3a3338;--ok:#6fcf97;--wn:#f2b45a}}
@@ -28,8 +28,8 @@ input,textarea{width:100%;padding:9px 10px;border:1px solid var(--bd);border-rad
 #lb{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:9;padding:16px;cursor:zoom-out}
 #lb.hide{display:none}#lb img{max-width:100%;max-height:100%;border-radius:12px;object-fit:contain}.prod img{cursor:zoom-in}
 </style></head><body><main>
-<h1>📦 Borang Tempahan</h1>
-<nav id="nav"><button data-v="form" class="on">Tempah</button><button data-v="track">Semak Order</button><button data-v="seller">Penjual</button></nav>
+<h1>🌸 MANJA FLORIST </h1>
+<nav id="nav"><button data-v="form" class="on">Customer Order 📦</button><button data-v="track">Status Order</button><button data-v="seller">Manja's Lounge</button></nav>
 
 <section id="v-form">
 <div class="card"><h2>Maklumat anda</h2>
@@ -127,7 +127,7 @@ $('tg').onclick=async()=>{const c=$('tc').value.trim().toUpperCase();if(!c)retur
 /* ---------- Penjual ---------- */
 async function sload(){const d=await sapi({a:'sdata'});products=d.products;orders=d.orders;renderProducts();renderSeller()}
 function renderSeller(){const el=$('sl');
- if(!pw){el.innerHTML=`<div class="card"><h2>🔒 Penjual</h2><label>Kata laluan</label><input id="pw" type="password"><p><button class="btn" id="pwgo">Masuk</button></p><div id="pwm" class="mu"></div></div>`;return}
+ if(!pw){el.innerHTML=`<div class="card"><h2>🔒 Manja's Lounge</h2><label>Kata laluan</label><input id="pw" type="password"><p><button class="btn" id="pwgo">Masuk</button></p><div id="pwm" class="mu"></div></div>`;return}
  const act=orders.filter(o=>o.status!=='batal'),pend=act.filter(o=>o.status==='baru'),need={};
  pend.forEach(o=>o.items.forEach(i=>need[i.id]=(need[i.id]||0)+1));const sum=k=>act.reduce((a,o)=>a+o[k],0);
  el.innerHTML=`<div class="grid"><div class="stat">Order akan datang<b>${pend.length}</b></div><div class="stat">Deposit diterima<b>${RM(sum('deposit'))}</b></div><div class="stat">Jumlah jualan<b>${RM(sum('total'))}</b></div></div>
